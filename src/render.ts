@@ -1,5 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import sharp from "sharp";
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 
 import { mathjax } from "@mathjax/src/js/mathjax.js";
 import { TeX } from "@mathjax/src/js/input/tex.js";
@@ -11,6 +13,9 @@ type RenderConfig = {
   equationsDir: string;
   outDir: string;
   display: boolean; // true -> display math, false -> inline math
+  pngScale?: number; // Scale factor for PNG rendering (default: 1, e.g., 10 for 10x upscale)
+  // Margin is needed because when the svg is rendered to png, the edges of the white outlines were being clipped.
+  margin?: number; // Margin in SVG units (default: 0, e.g., 50 for 50 units of margin)
 };
 
 function slugify(filename: string): string {
@@ -115,23 +120,59 @@ async function main(cfg: RenderConfig): Promise<void> {
       continue;
     }
 
-    const svg = await renderOne(html, adaptor, latex, cfg.display);
+    let svg = await renderOne(html, adaptor, latex, cfg.display);
+
+    // Add margin to SVG if specified
+    const margin = cfg.margin ?? 0;
+    if (margin > 0) {
+      svg = addMarginToSvg(svg, margin);
+    }
 
     const base = slugify(file);
-    const outPath = path.join(outDir, `${base}.svg`);
-    await fs.writeFile(outPath, svg, "utf8");
+    const svgPath = path.join(outDir, `${base}.svg`);
+    await fs.writeFile(svgPath, svg, "utf8");
+    console.log(`Wrote ${path.relative(process.cwd(), svgPath)}${margin > 0 ? ` (margin: ${margin})` : ""}`);
 
-    console.log(`Wrote ${path.relative(process.cwd(), outPath)}`);
+    // Also render PNG
+    const pngPath = path.join(outDir, `${base}.png`);
+    const scale = cfg.pngScale ?? 1;
+    // Use density to control rasterization resolution (default is 72 DPI)
+    // Scale of 10x means 720 DPI for sharp rendering
+    const density = Math.round(72 * scale);
+    
+    // For PNG, we need to add padding using extend if margin is specified
+    // Convert margin from SVG units to pixels at the given density
+    // const marginPixels = margin > 0 ? Math.round(margin * (density / 72)) : 0;
+    
+    const sharpInstance = sharp(Buffer.from(svg), { density });
+    // if (marginPixels > 0) {
+    //   // Extend the image with transparent padding
+    //   await sharpInstance
+    //     .extend({
+    //       top: marginPixels,
+    //       bottom: marginPixels,
+    //       left: marginPixels,
+    //       right: marginPixels,
+    //       background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
+    //     })
+    //     .png()
+    //     .toFile(pngPath);
+    // } else {
+      await sharpInstance
+        .png()
+        .toFile(pngPath);
+    // }
+    console.log(`Wrote ${path.relative(process.cwd(), pngPath)} (scale: ${scale}x${margin > 0 ? `, margin: ${margin}` : ""})`);
   }
 }
 
 await main({
   equationsDir: "equations",
   outDir: "out",
-  display: true
+  display: true,
+  pngScale: 10, // 10x upscale for sharp PNG rendering
+  margin: 20 // 50 SVG units of margin around the equation
 });
-
-import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 
 type OutlineOpts = {
   stroke: string;        // e.g. "#fff"
@@ -152,6 +193,58 @@ export function addOutlineToMathJaxSvg(svgText: string, opts: OutlineOpts): stri
     p.setAttribute("stroke-width", String(opts.strokeWidth));
     p.setAttribute("paint-order", "stroke fill");
     p.setAttribute("stroke-linejoin", "round");
+  }
+
+  return new XMLSerializer().serializeToString(doc);
+}
+
+function addMarginToSvg(svgText: string, margin: number): string {
+  if (margin <= 0) return svgText;
+  
+  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+  const svgElement = doc.getElementsByTagName("svg")[0];
+  if (!svgElement) return svgText;
+
+  const viewBox = svgElement.getAttribute("viewBox");
+  if (!viewBox) return svgText;
+
+  const parts = viewBox.split(/\s+/).map(Number);
+  if (parts.length !== 4) return svgText;
+  
+  const [x, y, width, height] = parts;
+  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+    return svgText;
+  }
+  console.log(`x: ${x}, y: ${y}, width: ${width}, height: ${height}`);
+  
+  // Expand viewBox by margin on all sides
+  const newX = x - margin;
+  const newY = y - margin;
+  const newWidth = width + 2 * margin;
+  const newHeight = height + 2 * margin;
+
+  console.log(`newX: ${newX}, newY: ${newY}, newWidth: ${newWidth}, newHeight: ${newHeight}`);
+
+  svgElement.setAttribute("viewBox", `${newX} ${newY} ${newWidth} ${newHeight}`);
+
+  // Also update width/height if they exist
+  const widthAttr = svgElement.getAttribute("width");
+  const heightAttr = svgElement.getAttribute("height");
+
+  console.log(`widthAttr: ${widthAttr}, heightAttr: ${heightAttr}`);
+  if (widthAttr && !widthAttr.includes("%")) {
+    const widthValue = parseFloat(widthAttr);
+    if (!isNaN(widthValue) && width > 0 && height > 0) {
+      const aspectRatio = width / height;
+      const newWidthValue = widthValue + 2 * margin * (widthValue / width);
+      const newHeightValue = newWidthValue / aspectRatio;
+      console.log(`newWidthValue: ${newWidthValue}, newHeightValue: ${newHeightValue}`);
+      // The original width/height is in ex units, so we need to add the margin in ex units
+      svgElement.setAttribute("width", String(newWidthValue + "ex"));
+      if (heightAttr && !heightAttr.includes("%")) {
+        svgElement.setAttribute("height", String(newHeightValue + "ex"));
+      }
+    }
   }
 
   return new XMLSerializer().serializeToString(doc);
