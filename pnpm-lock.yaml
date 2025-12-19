@@ -1,0 +1,29 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      mathjax:
+        specifier: ^4.1.0
+        version: 4.1.0
+
+packages:
+
+  '@mathjax/mathjax-newcm-font@4.1.0':
+    resolution: {integrity: sha512-n10AwYubUa2hyOzxSRzkwRrgCVns083zkentryXICMPKaWT/watfvK2sUk5D9Bow9mpDfoqb5EWApuUvqnlzaw==}
+
+  mathjax@4.1.0:
+    resolution: {integrity: sha512-53eDXzxk40pS2sdI6KDCPoreY95ADaGygbi41ExKmn3FYQ+QIdpquIU90eppecelzQjf74kpScyeplVPccnIJw==}
+
+snapshots:
+
+  '@mathjax/mathjax-newcm-font@4.1.0': {}
+
+  mathjax@4.1.0:
+    dependencies:
+      '@mathjax/mathjax-newcm-font': 4.1.0
