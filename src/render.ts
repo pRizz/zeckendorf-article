@@ -87,7 +87,8 @@ async function renderOne(
   }
   
   const svgText = svgMatch[0];
-  return wrapSvg(svgText);
+  const svgWithOutline = addOutlineToMathJaxSvg(svgText, { stroke: "#fff", strokeWidth: 20 });
+  return wrapSvg(svgWithOutline);
 }
 
 async function main(cfg: RenderConfig): Promise<void> {
@@ -129,3 +130,29 @@ await main({
   outDir: "out",
   display: true
 });
+
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+
+type OutlineOpts = {
+  stroke: string;        // e.g. "#fff"
+  strokeWidth: number;   // e.g. 0.6
+};
+
+export function addOutlineToMathJaxSvg(svgText: string, opts: OutlineOpts): string {
+  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+
+  const paths = Array.from(doc.getElementsByTagName("path"));
+  for (const p of paths) {
+    // Only touch paths that are filled (MathJax glyphs typically have fill)
+    // If you want to outline *everything*, remove this guard.
+    const fill = p.getAttribute("fill");
+    if (fill === "none") continue;
+
+    p.setAttribute("stroke", opts.stroke);
+    p.setAttribute("stroke-width", String(opts.strokeWidth));
+    p.setAttribute("paint-order", "stroke fill");
+    p.setAttribute("stroke-linejoin", "round");
+  }
+
+  return new XMLSerializer().serializeToString(doc);
+}
