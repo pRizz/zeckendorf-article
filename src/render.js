@@ -55,7 +55,14 @@ function wrapSvg(svgInner) {
 }
 async function renderOne(html, adaptor, latex, display) {
     const node = html.convert(latex, { display });
-    const svgText = adaptor.outerHTML(node);
+    // Get the full HTML with mjx-container
+    const fullHtml = adaptor.outerHTML(node);
+    // Extract just the SVG element by finding the <svg> tag and its closing tag
+    const svgMatch = fullHtml.match(/<svg[\s\S]*?<\/svg>/);
+    if (!svgMatch) {
+        throw new Error("No SVG element found in MathJax output");
+    }
+    const svgText = svgMatch[0];
     return wrapSvg(svgText);
 }
 async function main(cfg) {
