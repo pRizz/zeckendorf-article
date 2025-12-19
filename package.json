@@ -11,6 +11,6 @@
   "license": "ISC",
   "packageManager": "pnpm@10.26.1",
   "dependencies": {
-    "mathjax": "^4.1.0"
+    "@mathjax/src": "^4.1.0"
   }
 }
