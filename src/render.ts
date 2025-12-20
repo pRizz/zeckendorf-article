@@ -8,6 +8,7 @@ import { TeX } from "@mathjax/src/js/input/tex.js";
 import { SVG } from "@mathjax/src/js/output/svg.js";
 import { liteAdaptor } from "@mathjax/src/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "@mathjax/src/js/handlers/html.js";
+import '@mathjax/src/js/input/tex/ams/AMSConfiguration.js';
 
 type RenderConfig = {
   equationsDir: string;
@@ -40,22 +41,7 @@ function createMathJax() {
   RegisterHTMLHandler(adaptor);
 
   const tex = new TeX({
-    packages: [
-      'base',
-      'ams',
-      'autoload',
-      'require',
-      'newcommand',
-      'configmacros',
-      'tagformat',
-      'textmacros',
-      'unicode',
-      'color',
-      'colortbl',
-      'mathtools',
-      'physics',
-      'mhchem',
-    ],
+    packages: ["base", "ams"],
     // You can add macros here if you want deterministic shorthand:
     // macros: { RR: "\\mathbb{R}" }
   });
