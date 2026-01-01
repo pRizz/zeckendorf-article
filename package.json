@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "packageManager": "pnpm@10.26.1",
   "dependencies": {
     "@mathjax/src": "^4.1.0",
