@@ -8,7 +8,8 @@ import { TeX } from "@mathjax/src/js/input/tex.js";
 import { SVG } from "@mathjax/src/js/output/svg.js";
 import { liteAdaptor } from "@mathjax/src/js/adaptors/liteAdaptor.js";
 import { RegisterHTMLHandler } from "@mathjax/src/js/handlers/html.js";
-import '@mathjax/src/js/input/tex/ams/AMSConfiguration.js';
+// @ts-ignore - Side-effect import for AMS configuration; module exists at runtime but TypeScript may not resolve it in all environments
+import '@mathjax/src/js/input/tex/ams/AMSConfiguration';
 
 type RenderConfig = {
   equationsDir: string;
