@@ -19,6 +19,9 @@ type RenderConfig = {
   margin?: number; // Margin in SVG units (default: 0, e.g., 50 for 50 units of margin)
 };
 
+const BRIGHT_OUTLINE_STROKE_COLOR = "#ddd";
+const BRIGHT_OUTLINE_STROKE_WIDTH = 45;
+
 function slugify(filename: string): string {
   // euler.tex -> euler
   return filename.replace(/\.[^.]+$/, "");
@@ -78,7 +81,7 @@ async function renderOne(
   }
   
   const svgText = svgMatch[0];
-  const svgWithOutline = addOutlineToMathJaxSvg(svgText, { stroke: "#fff", strokeWidth: 20 });
+  const svgWithOutline = addOutlineToMathJaxSvg(svgText, { stroke: BRIGHT_OUTLINE_STROKE_COLOR, strokeWidth: BRIGHT_OUTLINE_STROKE_WIDTH });
   return wrapSvg(svgWithOutline);
 }
 
